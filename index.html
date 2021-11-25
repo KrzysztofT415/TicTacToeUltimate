@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cluster analysis with k-means method</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Merriweather+Sans'>
+    <link href='style.css' rel='stylesheet'>
+</head>
+<body>
+<div id='board'></div>
+
+<div id='panel'>
+    <label>AI SYMBOL</label>
+    <div class='col2'>
+        <button id='circle'>O</button>
+        <button id='cross' class='chosen'>X</button>
+    </div>
+
+    <label for='depth'>DEPTH:</label>
+    <input id='depth' type='number' min='1' class='number' placeholder='1'>
+
+    <label><pre>BEST :     <a id='best_move_x'>_</a> : <a id='best_move_y'>_</a></pre>
+    </label>
+    <button id='make_move'>MAKE MOVE</button>
+    <label for='auto_move'>AUTO-MOVE</label>
+    <input type='checkbox' id='auto_move' class='checkbox' checked/>
+    <button id='restart' style='grid-column: span 2'>RESTART</button>
+    <label id='result' style='grid-column: span 2'></label>
+</div>
+
+<script src='./MiniMax.js'></script>
+<script src='./script.js'></script>
+</body>
+</html>
