@@ -1,0 +1,86 @@
+@import '/home/krzysiek/universal/_default_scss_template.scss';
+
+body {
+    width: 100vw;
+    height: 100vh;
+    padding: 3vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3vw;
+    background-color: $darkM;
+}
+
+button.chosen {
+    background-color: $secondaryLE;
+}
+
+button:hover {
+    background-color: $primaryL;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+
+    button {
+        width: 10vh;
+        height: 10vh;
+    }
+}
+
+#panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-self: center;
+    justify-self: center;
+    gap: 2vh;
+
+    #circle,
+    #cross {
+        width: 6vh;
+        height: 6vh;
+        border-radius: 3vh;
+    }
+
+    #depth {
+        margin: auto;
+    }
+
+    #restart {
+        height: 5vh;
+    }
+
+    .col2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-self: center;
+        justify-self: center;
+        gap: 2vh;
+        width: 10vw;
+    }
+
+    label,
+    a {
+        color: $white;
+        padding: 1vh 0;
+        font-size: 1.2pc;
+        text-align: center;
+    }
+
+    input {
+        font-size: 2pc;
+        width: 12vh;
+        text-align: center;
+
+        .number {
+            overflow: hidden;
+        }
+    }
+
+    #auto_move {
+        height: 3vh;
+        width: 3vh;
+        margin: auto;
+    }
+}

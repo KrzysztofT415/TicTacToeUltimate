@@ -1,11 +1,9 @@
 class MiniMax {
-    board_state
-
     constructor() {
         this.board_state = BigInt(0)
     }
 
-    getTile = (x, y) => this.board_state >> (24n - BigInt(x * 5 + y)) * 2n & 3n
+    getTile = (x, y) => (this.board_state >> ((24n - BigInt(x * 5 + y)) * 2n)) & 3n
 
     setTile = (x, y, number) => {
         let shift = (24n - BigInt(x * 5 + y)) * 2n
@@ -13,7 +11,7 @@ class MiniMax {
         this.board_state = this.board_state |= BigInt(number) << shift
     }
 
-    static getTile = (board_state, x, y) => board_state >> (24n - BigInt(x * 5 + y)) * 2n & 3n
+    static getTile = (board_state, x, y) => (board_state >> ((24n - BigInt(x * 5 + y)) * 2n)) & 3n
     static setTile = (board_state, x, y, number) => {
         let shift = (24n - BigInt(x * 5 + y)) * 2n
         board_state &= ~(3n << shift)
@@ -25,41 +23,38 @@ class MiniMax {
         let xor = this.board_state ^ new_state
         for (let i = 0; i < 5; i++) {
             for (let j = 0; j < 5; j++) {
-                if (MiniMax.getTile(xor, i ,j) !== 0n)
-                    return { x: i, y: j }
+                if (MiniMax.getTile(xor, i, j) !== 0n) return { x: i, y: j }
             }
         }
     }
 
-
-
     getMove = (depth, sign) => {
-        let score = -Infinity
-        let chosen = null
-        for (const childNode of MiniMax.getChildNodes(this.board_state, sign === 1)) {
-            let childEval = MiniMax.minimax(childNode, depth - 1, -Infinity, Infinity, true, sign === 1)
+        let is_circle = sign === 1
+        let children = MiniMax.getChildNodes(this.board_state, is_circle)
+        let chosen = children.pop()
+        let score = MiniMax.minimax(chosen, depth - 1, -Infinity, Infinity, false, !is_circle)
+        for (const childNode of children) {
+            let childEval = MiniMax.minimax(childNode, depth - 1, -Infinity, Infinity, false, !is_circle)
             if (childEval > score) {
                 score = childEval
                 chosen = childNode
                 if (score === Infinity) break
             }
-            console.log(childNode.toString(4), childEval)
         }
+        console.log(score)
         return this.getChangedTile(chosen)
     }
 
-    static minimax = (board_state, depth, alpha, beta, maximizingPlayer, is_circle) => {
+    static minimax = (board_state, depth, alpha, beta, maximizingPlayer, who_made_move) => {
         let ending_check = MiniMax.checkIfGameEnded(board_state)
-        if (ending_check.isEnded) console.log(depth, 2 >> maximizingPlayer, 2 >> ending_check.whoWon, ((ending_check.whoWon === maximizingPlayer) * 2 - 1) * Infinity, board_state.toString(4))
-        if (ending_check.isEnded) return ((ending_check.whoWon === maximizingPlayer) * 2 - 1) * Infinity
+        if (ending_check.isEnded) return ((ending_check.whoWon !== who_made_move) * 2 - 1) * Infinity
 
-        if (depth === 0)
-            return MiniMax.heuristic(board_state, maximizingPlayer)
+        if (depth === 0) return MiniMax.heuristic(board_state, who_made_move)
 
         if (maximizingPlayer) {
             let maxEval = -Infinity
-            for (const childNode of MiniMax.getChildNodes(board_state, is_circle)) {
-                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, false, !is_circle)
+            for (const childNode of MiniMax.getChildNodes(board_state, !who_made_move)) {
+                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, false, !who_made_move)
                 maxEval = Math.max(maxEval, childEval)
                 alpha = Math.max(alpha, childEval)
                 if (beta <= alpha) break
@@ -67,8 +62,8 @@ class MiniMax {
             return maxEval
         } else {
             let minEval = Infinity
-            for (const childNode of MiniMax.getChildNodes(board_state, is_circle)) {
-                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, true, !is_circle)
+            for (const childNode of MiniMax.getChildNodes(board_state, !who_made_move)) {
+                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, true, !who_made_move)
                 minEval = Math.min(minEval, childEval)
                 beta = Math.min(beta, childEval)
                 if (beta <= alpha) break
@@ -77,10 +72,14 @@ class MiniMax {
         }
     }
 
-
-    static tiles_points = [[2, 10, 5, 5, 1], [6, 9, 12, 8, 9], [6, 11, 100, 11, 4], [7, 10, 12, 7, 4], [1, 3, 3, 8, 2]]
-    static possible_wins = [/^.?(?:[2.]){4}|^(?:.....)?.?.?.?.?[2.](?:....[2.]){3}|^(?:.....)?.?[2.](?:.....[2.]){3}|^(?:.....)?.?(?:...[2.]){4}/g,
-                            /^.?(?:[1.]){4}|^(?:.....)?.?.?.?.?[1.](?:....[1.]){3}|^(?:.....)?.?[1.](?:.....[1.]){3}|^(?:.....)?.?(?:...[1.]){4}/g]
+    static tiles_points = [
+        [2, 10, 5, 5, 1],
+        [6, 9, 12, 8, 9],
+        [6, 11, 100, 11, 4],
+        [7, 10, 12, 7, 4],
+        [1, 3, 3, 8, 2]
+    ]
+    static possible_wins = [/^.?(?:[2.]){4}|^(?:.....)?.?.?.?.?[2.](?:....[2.]){3}|^(?:.....)?.?[2.](?:.....[2.]){3}|^(?:.....)?.?(?:...[2.]){4}/g, /^.?(?:[1.]){4}|^(?:.....)?.?.?.?.?[1.](?:....[1.]){3}|^(?:.....)?.?[1.](?:.....[1.]){3}|^(?:.....)?.?(?:...[1.]){4}/g]
     static heuristic = (board_state, sign) => {
         // TODO: Properly assign score to boards
         // let board_string = ('0'.repeat(25) + board_state.toString(4)).slice(-25)
@@ -109,8 +108,7 @@ class MiniMax {
         let children = []
         for (let i = 0; i < 5; ++i) {
             for (let j = 0; j < 5; ++j) {
-                if (MiniMax.getTile(board_state, i ,j) === 0n)
-                    children = [...children, { x: i, y: j }]
+                if (MiniMax.getTile(board_state, i, j) === 0n) children = [...children, { x: i, y: j }]
             }
         }
         return children.map(child => MiniMax.setTile(board_state, child.x, child.y, 2 >> is_circle))

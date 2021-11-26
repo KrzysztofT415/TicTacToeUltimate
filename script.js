@@ -16,8 +16,11 @@ const Sign = {
 }
 
 let ai_sign = Sign.CROSS
-let first_move = true, computer_turn = false, ended = false
-let best_move_x = null, best_move_y = null
+let first_move = true,
+    computer_turn = false,
+    ended = false
+let best_move_x = null,
+    best_move_y = null
 let moves_made = 0
 let minimax = new MiniMax(ai_sign)
 
@@ -27,11 +30,10 @@ let setSign = (x, y, sign) => {
 
     let result = MiniMax.checkIfGameEnded(minimax.board_state)
     if (result.isEnded) {
-        document.getElementById('result').innerText = (2 >> result.whoWon === ai_sign ? 'AI WILL REPLACE YOU SOON ;)' : 'AI IS NOT READY\nTO CONQUER EARTH (yet)')
+        document.getElementById('result').innerText = 2 >> result.whoWon === ai_sign ? 'AI WILL REPLACE YOU SOON ;)' : 'AI IS NOT READY\nTO CONQUER EARTH (yet)'
         ended = true
     }
 }
-
 
 const best_x_obj = document.getElementById('best_move_x')
 const best_y_obj = document.getElementById('best_move_y')
@@ -57,8 +59,8 @@ let makeAImove = _ => {
         circle_btn.disabled = true
         cross_btn.disabled = true
         first_move = false
-    }
-    else if (!computer_turn) return
+        getMinMaxMove(ai_sign)
+    } else if (!computer_turn) return
     best_x_obj.innerText = '_'
     best_y_obj.innerText = '_'
 
@@ -86,14 +88,13 @@ window.makePlayerMove = (x, y) => {
     getMinMaxMove(ai_sign)
     computer_turn = true
     if (moves_made++ > 25) {
-        document.getElementById('result').innerText = 'EPIC BATTLE BETWEEN HUMANITY AND AI IS YET TO BE RESOLVED'
+        document.getElementById('result').innerText = 'EPIC BATTLE BETWEEN HUMANITY AND AI\nIS YET TO BE RESOLVED'
         ended = true
         return
     }
 
     if (document.getElementById('auto_move').checked) makeAImove()
 }
-
 
 document.getElementById('depth').onchange = _ => getMinMaxMove(ai_sign)
 const circle_btn = document.getElementById('circle')
@@ -120,8 +121,8 @@ document.getElementById('restart').onclick = _ => {
     first_move = true
     computer_turn = false
     ended = false
+    moves_made = 0
     minimax = new MiniMax()
-    getMinMaxMove(Sign.opposite(ai_sign))
 }
 
 window.onload = _ => {
@@ -132,5 +133,4 @@ window.onload = _ => {
             board_obj.innerHTML += `<button id='${i}-${j}' onclick='makePlayerMove(${i}, ${j})'></button>`
         }
     }
-    getMinMaxMove(Sign.opposite(ai_sign))
 }
