@@ -22,15 +22,15 @@ let first_move = true,
 let best_move_x = null,
     best_move_y = null
 let moves_made = 0
-let minimax = new MiniMax(ai_sign)
+let minimax = new MiniMax()
 
 let setSign = (x, y, sign) => {
     document.getElementById(`${x}-${y}`).innerText = Sign.string(sign)
-    minimax.setTile(x, y, sign)
+    minimax.makeMove(x * 6 + y, sign)
 
-    let result = MiniMax.checkIfGameEnded(minimax.board_state)
-    if (result.isEnded) {
-        document.getElementById('result').innerText = 2 >> result.whoWon === ai_sign ? 'AI WILL REPLACE YOU SOON ;)' : 'AI IS NOT READY\nTO CONQUER EARTH (yet)'
+    let result = MiniMax.checkIfGameEnded(minimax.board_state, sign === 1)
+    if (result !== null) {
+        document.getElementById('result').innerText = computer_turn === result ? 'AI WILL REPLACE YOU SOON ;)' : 'AI IS NOT READY\nTO CONQUER EARTH (yet)'
         ended = true
     }
 }
@@ -59,7 +59,8 @@ let makeAImove = _ => {
         circle_btn.disabled = true
         cross_btn.disabled = true
         first_move = false
-        getMinMaxMove(ai_sign)
+        best_move_x = 2
+        best_move_y = 2
     } else if (!computer_turn) return
     best_x_obj.innerText = '_'
     best_y_obj.innerText = '_'
@@ -81,7 +82,7 @@ window.makePlayerMove = (x, y) => {
         first_move = false
     }
     if (computer_turn) return
-    if (minimax.getTile(x, y)) return
+    if (minimax.getVal(x * 6 + y) !== '-') return
 
     setSign(x, y, Sign.opposite(ai_sign))
     if (ended) return
@@ -96,7 +97,9 @@ window.makePlayerMove = (x, y) => {
     if (document.getElementById('auto_move').checked) makeAImove()
 }
 
-document.getElementById('depth').onchange = _ => getMinMaxMove(ai_sign)
+document.getElementById('depth').onchange = _ => {
+    if (!first_move) getMinMaxMove(ai_sign)
+}
 const circle_btn = document.getElementById('circle')
 const cross_btn = document.getElementById('cross')
 circle_btn.onclick = _ => {
@@ -113,9 +116,10 @@ document.getElementById('make_move').onclick = _ => makeAImove()
 document.getElementById('restart').onclick = _ => {
     circle_btn.disabled = false
     cross_btn.disabled = false
+    minimax.reset()
     for (let i = 0; i < 5; ++i) {
         for (let j = 0; j < 5; ++j) {
-            setSign(i, j, Sign.EMPTY)
+            document.getElementById(`${i}-${j}`).innerText = ''
         }
     }
     first_move = true
@@ -134,3 +138,13 @@ window.onload = _ => {
         }
     }
 }
+
+const handleKeys = e => {
+    switch (e.code) {
+        case 'KeyM':
+            return makeAImove()
+        case 'KeyA':
+            return (document.getElementById('auto_move').checked = !document.getElementById('auto_move').checked)
+    }
+}
+document.addEventListener('keydown', handleKeys)

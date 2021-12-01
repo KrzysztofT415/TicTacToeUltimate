@@ -1,60 +1,78 @@
 class MiniMax {
     constructor() {
-        this.board_state = BigInt(0)
+        this.board_state = '-----I-----I-----I-----I-----'
     }
 
-    getTile = (x, y) => (this.board_state >> ((24n - BigInt(x * 5 + y)) * 2n)) & 3n
-
-    setTile = (x, y, number) => {
-        let shift = (24n - BigInt(x * 5 + y)) * 2n
-        this.board_state &= ~(3n << shift)
-        this.board_state = this.board_state |= BigInt(number) << shift
+    reset = _ => {
+        this.board_state = '-----I-----I-----I-----I-----'
     }
 
-    static getTile = (board_state, x, y) => (board_state >> ((24n - BigInt(x * 5 + y)) * 2n)) & 3n
-    static setTile = (board_state, x, y, number) => {
-        let shift = (24n - BigInt(x * 5 + y)) * 2n
-        board_state &= ~(3n << shift)
-        board_state |= BigInt(number) << shift
-        return board_state
+    // I - new line, O - player 1, X - player 2, U - impossible player 2 moves, Y - impossible player 1 moves
+    makeMove = (ind, sign) => {
+        this.board_state = this.board_state.substring(0, ind) + (sign === 1 ? 'O' : 'X') + this.board_state.substring(ind + 1)
     }
 
-    getChangedTile = new_state => {
-        let xor = this.board_state ^ new_state
-        for (let i = 0; i < 5; i++) {
-            for (let j = 0; j < 5; j++) {
-                if (MiniMax.getTile(xor, i, j) !== 0n) return { x: i, y: j }
-            }
+    getVal = ind => this.board_state[ind]
+
+    getChange = other_state => {
+        let i = 0
+        let j = 0
+        let result = ''
+
+        while (j < this.board_state.length) {
+            if (other_state[i] != this.board_state[j] || i == other_state.length) return { x: Math.floor(j / 6), y: j % 6 }
+            else i++
+            j++
         }
+        return null
+    }
+
+    static getChange = (other_state, current_state) => {
+        let i = 0
+        let j = 0
+        let result = ''
+
+        while (j < current_state.length) {
+            if (other_state[i] != current_state[j] || i == other_state.length) return { x: Math.floor(j / 6), y: j % 6 }
+            else i++
+            j++
+        }
+        return null
     }
 
     getMove = (depth, sign) => {
         let is_circle = sign === 1
+        console.log('searching for ', is_circle ? 'O' : 'X')
         let children = MiniMax.getChildNodes(this.board_state, is_circle)
         let chosen = children.pop()
-        let score = MiniMax.minimax(chosen, depth - 1, -Infinity, Infinity, false, !is_circle)
+        let score = MiniMax.minimax(chosen, depth - 1, -Infinity, Infinity, false, !is_circle, MiniMax.getChange(this.board_state, chosen))
+
         for (const childNode of children) {
-            let childEval = MiniMax.minimax(childNode, depth - 1, -Infinity, Infinity, false, !is_circle)
+            let changed = MiniMax.getChange(this.board_state, childNode)
+            let childEval = MiniMax.minimax(childNode, depth - 1, -Infinity, Infinity, false, !is_circle, changed) + MiniMax.placement[changed.x][changed.y]
             if (childEval > score) {
                 score = childEval
                 chosen = childNode
-                if (score === Infinity) break
+                if (score === Infinity) {
+                    console.log('found win')
+                    break
+                }
             }
         }
         console.log(score)
-        return this.getChangedTile(chosen)
+        return this.getChange(chosen)
     }
 
-    static minimax = (board_state, depth, alpha, beta, maximizingPlayer, who_made_move) => {
-        let ending_check = MiniMax.checkIfGameEnded(board_state)
-        if (ending_check.isEnded) return ((ending_check.whoWon !== who_made_move) * 2 - 1) * Infinity
+    static minimax = (board_state, depth, alpha, beta, maximizingPlayer, circle_has_move, change) => {
+        let ending_check = MiniMax.checkIfGameEnded(board_state, !circle_has_move)
+        if (ending_check !== null) return ((ending_check ^ maximizingPlayer) * 2 - 1) * Infinity
 
-        if (depth === 0) return MiniMax.heuristic(board_state, who_made_move)
+        if (depth === 0) return MiniMax.heuristic(board_state, maximizingPlayer, !circle_has_move, change)
 
         if (maximizingPlayer) {
             let maxEval = -Infinity
-            for (const childNode of MiniMax.getChildNodes(board_state, !who_made_move)) {
-                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, false, !who_made_move)
+            for (const childNode of MiniMax.getChildNodes(board_state, circle_has_move)) {
+                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, false, !circle_has_move, MiniMax.getChange(board_state, childNode))
                 maxEval = Math.max(maxEval, childEval)
                 alpha = Math.max(alpha, childEval)
                 if (beta <= alpha) break
@@ -62,8 +80,8 @@ class MiniMax {
             return maxEval
         } else {
             let minEval = Infinity
-            for (const childNode of MiniMax.getChildNodes(board_state, !who_made_move)) {
-                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, true, !who_made_move)
+            for (const childNode of MiniMax.getChildNodes(board_state, circle_has_move)) {
+                let childEval = MiniMax.minimax(childNode, depth - 1, alpha, beta, true, !circle_has_move, MiniMax.getChange(board_state, childNode))
                 minEval = Math.min(minEval, childEval)
                 beta = Math.min(beta, childEval)
                 if (beta <= alpha) break
@@ -72,50 +90,82 @@ class MiniMax {
         }
     }
 
-    static tiles_points = [
-        [2, 10, 5, 5, 1],
-        [6, 9, 12, 8, 9],
-        [6, 11, 100, 11, 4],
-        [7, 10, 12, 7, 4],
-        [1, 3, 3, 8, 2]
+    static heuristic = (board_string, maximizingPlayer, circle_has_move, change) => {
+        board_string = MiniMax.prepareBoard(board_string, circle_has_move)
+
+        let ending_check = MiniMax.checkIfGameEnded(board_string, circle_has_move)
+        if (ending_check !== null) return ((ending_check ^ maximizingPlayer) * 2 - 1) * Infinity
+
+        let wins = MiniMax.countPossibleWins(board_string, circle_has_move)
+        let opponent = MiniMax.countPossibleWins(board_string, !circle_has_move)
+
+        let three = MiniMax.countThree(board_string, circle_has_move)
+        let placement = MiniMax.placement[change.x][change.y]
+
+        return wins - opponent + three + placement
+    }
+
+    static cross_unplayable = /-(?<=XX)(?!-X)|-(?=XX)(?<!X-)|-(?<=X.....X.....)(?!-.....X)|-(?=.....X.....X)(?<!X.....-)|-(?<=X....X....)(?!-....X)|-(?=....X....X)(?<!X....-)|-(?<=X......X......)(?!-......X)|-(?=......X......X)(?<!X......-)/g
+    static circle_unplayable = /-(?<=OO)(?!-O)|-(?=OO)(?<!O-)|-(?<=O.....O.....)(?!-.....O)|-(?=.....O.....O)(?<!O.....-)|-(?<=O....O....)(?!-....O)|-(?=....O....O)(?<!O....-)|-(?<=O......O......)(?!-......O)|-(?=......O......O)(?<!O......-)/g
+    static prepareBoard = (board_string, circle_has_move) => {
+        if (circle_has_move) return board_string.replace(MiniMax.cross_unplayable, 'O')
+        return board_string.replace(MiniMax.circle_unplayable, 'X')
+    }
+
+    static countPossibleWins = (board_string, circle_has_move) => {
+        board_string = board_string.replace(/-/g, circle_has_move ? 'O' : 'X')
+        if (circle_has_move) return MiniMax.matchOverlap(board_string, MiniMax.circle_win).length
+        else return MiniMax.matchOverlap(board_string, MiniMax.cross_win).length
+    }
+    static cross_three = /XX|X-X-|-X-X|X--X|X.....X|X.....-.....X.....-|-.....X.....-.....X|X.....-.....-.....X|X......X|X......-......X......-|-......X......-......X|X......-......-......X|X....X|X....-....X....-|-....X....-....X|X....-....-....X/g
+    static circle_three = /OO|O-O-|-O-O|O--O|O.....O|O.....-.....O.....-|-.....O.....-.....O|O.....-.....-.....O|O......O|O......-......O......-|-......O......-......O|O......-......-......O|O....O|O....-....O....-|-....O....-....O|O....-....-....O/g
+    static countThree = (board_string, circle_has_move) => {
+        if (circle_has_move) return MiniMax.matchOverlap(board_string, MiniMax.circle_three).length
+        else return MiniMax.matchOverlap(board_string, MiniMax.cross_three).length
+    }
+    static placement = [
+        [2, 10, 5, 5, 1, 0],
+        [6, 9, 12, 8, 9, 0],
+        [6, 11, 100, 11, 4, 0],
+        [7, 10, 12, 7, 4, 0],
+        [1, 3, 3, 8, 2, 0]
     ]
-    static possible_wins = [/^.?(?:[2.]){4}|^(?:.....)?.?.?.?.?[2.](?:....[2.]){3}|^(?:.....)?.?[2.](?:.....[2.]){3}|^(?:.....)?.?(?:...[2.]){4}/g, /^.?(?:[1.]){4}|^(?:.....)?.?.?.?.?[1.](?:....[1.]){3}|^(?:.....)?.?[1.](?:.....[1.]){3}|^(?:.....)?.?(?:...[1.]){4}/g]
-    static heuristic = (board_state, sign) => {
-        // TODO: Properly assign score to boards
-        // let board_string = ('0'.repeat(25) + board_state.toString(4)).slice(-25)
-        // let points = 0
-        // for (let i = 0; i < 5; ++i) {
-        //     points += board_string.slice(i * 5).match(MiniMax.possible_wins[sign * 1])
-        // }
-        return 5
-    }
 
-    static checkIfGameEnded = board_state => {
-        let board_string = [...('0'.repeat(25) + board_state.toString(4)).slice(-25)].reduce((sum, val) => sum + val)
-        let circle_win = /^(?:.....)*.?1111|^(?:.....)?.?.?.?.?1(?:....1){3}|^(?:.....)?.?1(?:.....1){3}|^(?:.....)?.?(?:...1){4}/
-        let cross_win = /^(?:.....)*.?2222|^(?:.....)?.?.?.?.?2(?:....2){3}|^(?:.....)?.?2(?:.....2){3}|^(?:.....)?.?(?:...2){4}/
-        let circle_lost = /^(?:.....)*.?.?111|^(?:.....)?.?.?.?.?1(?:....1){2}|^(?:.....)*.?.?1(?:.....1){2}|^(?:.....)*.?.?..1(?:...1){2}/
-        let cross_lost = /^(?:.....)*.?.?222|^(?:.....)?.?.?.?.?2(?:....2){2}|^(?:.....)*.?.?2(?:.....2){2}|^(?:.....)*.?.?..2(?:...2){2}/
-
-        if (circle_win.test(board_string)) return { isEnded: true, whoWon: true }
-        if (cross_win.test(board_string)) return { isEnded: true, whoWon: false }
-        if (circle_lost.test(board_string)) return { isEnded: true, whoWon: false }
-        if (cross_lost.test(board_string)) return { isEnded: true, whoWon: true }
-        return { isEnded: false, whoWon: false }
-    }
-
-    static getChildNodes = (board_state, is_circle) => {
-        let children = []
-        for (let i = 0; i < 5; ++i) {
-            for (let j = 0; j < 5; ++j) {
-                if (MiniMax.getTile(board_state, i, j) === 0n) children = [...children, { x: i, y: j }]
-            }
+    static circle_win = /OOOO|O(?:.....O){3}|O(?:......O){3}|O(?:....O){3}/
+    static circle_lost = /OOO|O(?:.....O){2}|O(?:......O){2}|O(?:....O){2}/
+    static cross_win = /XXXX|X(?:.....X){3}|X(?:......X){3}|X(?:....X){3}/
+    static cross_lost = /XXX|X(?:.....X){2}|X(?:......X){2}|X(?:....X){2}/
+    static checkIfGameEnded = (board_string, circle_moved) => {
+        if (circle_moved) {
+            if (MiniMax.circle_win.test(board_string)) return true
+            if (MiniMax.circle_lost.test(board_string)) return false
+        } else {
+            if (MiniMax.cross_win.test(board_string)) return true
+            if (MiniMax.cross_lost.test(board_string)) return false
         }
-        return children.map(child => MiniMax.setTile(board_state, child.x, child.y, 2 >> is_circle))
+        return null
+    }
+
+    static getChildNodes = (board_string, circle_has_move) =>
+        [...board_string]
+            .map((val, ind) => {
+                if (val === '-') {
+                    return board_string.substring(0, ind) + (circle_has_move ? 'O' : 'X') + board_string.substring(ind + 1)
+                }
+                return null
+            })
+            .filter(val => val !== null)
+
+    static matchOverlap = (input, re) => {
+        var r = [],
+            m
+        if (!re.global) re = new RegExp(re.source, (re + '').split('/').pop() + 'g')
+        while ((m = re.exec(input))) {
+            re.lastIndex -= m[0].length - 1
+            r.push(m[0])
+        }
+        return r
     }
 }
 
-// console.log(MiniMax.heuristic(BigInt(parseInt('1000000000000000000000000', 4)), true))
-// console.log(MiniMax.heuristic(BigInt(parseInt('0100000000000000000000000', 4)), true))
-// console.log('a', '0000000000001000000000000'.match(/^(?:.....)*.?1+(?:[1|0]){3}|^(?:.....)?.?.?.?.?[1|0](?:....[1|0]){3}|^(?:.....)?.?[1|0](?:.....[1|0]){3}|^(?:.....)?.?(?:...[1|0]){4}/g))
 if (typeof window === 'undefined') module.exports = MiniMax

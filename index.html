@@ -18,19 +18,19 @@
             </div>
 
             <label for="depth">DEPTH:</label>
-            <input id="depth" type="number" min="1" class="number" placeholder="1" />
+            <input id="depth" type="number" min="1" class="number" placeholder="2" />
 
             <label>
                 <pre>BEST :     <a id='best_move_x'>_</a> : <a id='best_move_y'>_</a></pre>
             </label>
             <button id="make_move">MAKE MOVE</button>
             <label for="auto_move">AUTO-MOVE</label>
-            <input type="checkbox" id="auto_move" class="checkbox" checked />
+            <input type="checkbox" id="auto_move" class="checkbox" />
             <button id="restart" style="grid-column: span 2">RESTART</button>
             <label id="result" style="grid-column: span 2"></label>
         </div>
 
-        <script src="./MiniMax.js"></script>
-        <script src="./script.js"></script>
+        <script src="MiniMax.js"></script>
+        <script src="script.js"></script>
     </body>
 </html>
